@@ -1,19 +1,19 @@
 import "./login.css"
+import { toast } from 'react-toastify';
+
 import { Input } from "@mui/material";
 import Button from '@mui/material/Button';
-import api from '../../services/api';
-import { toast } from 'react-toastify';
+
+import clientServices from "../../services/clientServices";
 
 const Login = () => {
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-        event.preventDefault();
-
+        event.preventDefault()
         try {
-            const loginData = await api.post('/login', {
-                username: event.currentTarget.username.value,
-                password: event.currentTarget.password.value
-            });
-    
+            const loginData = await clientServices.login(
+                event.currentTarget.username.value, 
+                event.currentTarget.password.value
+            )
             if (loginData.status === 200) {
                 localStorage.setItem('token', loginData.data.token);
                 window.location.href = '/home';

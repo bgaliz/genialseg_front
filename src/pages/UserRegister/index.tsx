@@ -1,12 +1,15 @@
 import './userRegister.css'
 import { useCallback, useState } from "react";
-import { ClientType } from "../Home/types";
-import { toast } from "react-toastify";
-import api from "../../services/api";
-import { Button, Input } from "@mui/material";
-import SendIcon from '@mui/icons-material/Send';
 import { useNavigate } from 'react-router-dom';
+import { toast } from "react-toastify";
+
+import { Button, Input } from "@mui/material";
+import SendIcon from '@mui/icons-material/Send'
 import CloseIcon from '@mui/icons-material/Close';
+
+import { ClientType } from "../Home/types";
+import clientServices from '../../services/clientServices';
+
 
 
 const UserRegister = () => {
@@ -31,7 +34,7 @@ const UserRegister = () => {
             },
         };
         try {
-            const response = await api.post("/cadastrar-cliente", data);
+            const response = await clientServices.registerClient(data);
             setLoading(false);
             toast.success(response.data.message)
             navigate("/home")

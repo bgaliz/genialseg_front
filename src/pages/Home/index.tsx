@@ -1,35 +1,22 @@
 import "./home.css"
-import { useCallback, useMemo, useState } from "react";
-import api from "../../services/api";
-import { useQuery } from '@tanstack/react-query';
-import { Button } from "@mui/material";
-import Modal from '@mui/material/Modal';
-import PersonAddIcon from '@mui/icons-material/PersonAdd';
-import IconButton from '@mui/material/IconButton';
-import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import { toast } from "react-toastify";
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import EditIcon from '@mui/icons-material/Edit';
-import InsertClientForm from "../../components/ClientForm";
-import { ClientType } from "./types";
+import React, { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { PDFDownloadLink } from "@react-pdf/renderer";
-import UserListPDF from "../../components/RenderPDF";
+import { toast } from "react-toastify";
 
-const CLIENT_FORM_INIT = {
-    name: "",
-    email: "",
-    phone: "",
-    address: {
-        street: "",
-        zipcode: "",
-        number: "",
-        neighborhood: "",
-    },
-}
+import { useQuery } from '@tanstack/react-query';
+import Modal from '@mui/material/Modal';
+import IconButton from '@mui/material/IconButton';
+
+import InsertClientForm from "../../components/ClientForm";
+import clientServices from "../../services/clientServices";
+import GroupOfCards from "../../components/CardsGroup";
+import Header from "../../components/Header";
+
+import { ClientType } from "./types";
+import { CLIENT_FORM_INIT } from "./constants";
 
 const Home = () => {
-    const [loading, setLoading] = useState(false);
+    const [loadingFetch, setLoadingFetch] = useState(false);
     const [open, setOpen] = useState(false);
     const [client, setClient] = useState<ClientType>(CLIENT_FORM_INIT);
 
@@ -39,19 +26,15 @@ const Home = () => {
     
 
     const isMobileScreen = useMemo(() => {
-        console.log(window.innerWidth)
-        return window.innerWidth < 500;
+        return window.innerWidth < 768;
     }, []);
 
-    const { data: clients, isLoading, refetch } = useQuery({
+    const { data: clients, isLoading: isLoadingClients, refetch } = useQuery({
         queryKey: ['listar-clientes'],
-        queryFn: async () => {
-          const response = await api.get('/listar-clientes');
-          return response.data;
-        }
+        queryFn: clientServices.listClients
     });
 
-    const handleOpen = (id: string) => {
+    const handleEditClient = (id: string) => {
         const clientById = clients.find((client: ClientType) => client.id === id)
         console.log("clientById",clientById)
         setClient(clientById)
@@ -60,7 +43,7 @@ const Home = () => {
 
     const handleSubmit = useCallback(async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        setLoading(true);
+        setLoadingFetch(true);
         const formData = new FormData(event.currentTarget);
         const rawData = Object.fromEntries(formData.entries());
         const data: ClientType = {
@@ -75,91 +58,48 @@ const Home = () => {
             },
         };
         try {
-            const response = await api.put("/editar-cliente", data, {
-                params: { id: client.id }
-            });
-            setLoading(false);
+            const response = await clientServices.editClient(client.id!, data)
+            setLoadingFetch(false);
             setOpen(false);
             toast.success(response.data.message)
             refetch();
         } catch (error) {
             console.error("Erro ao cadastrar cliente:", error);
-            setLoading(false);
+            setLoadingFetch(false);
         }
     }, [client, refetch]);
 
     const handleGeneratePDF = () => {
-        setLoading(true)
+        setLoadingFetch(true)
         if(!clients.length) {
             toast.warning("Não há nenhum cliente cadastrado para gerar PDF!")
             return;
         }
-        setLoading(false)
+        setLoadingFetch(false)
     }
 
     return (
         <div className="wrapper-home">
-            <header className="header-home">
-                <h2>Lista de Clientes</h2>
-                <div className="header-actions">
-                    <Button variant="contained" color="primary" onClick={handleRedirect}>
-                        {isMobileScreen ? <PersonAddIcon /> : "Cadastrar"}
-                    </Button>
-                    <PDFDownloadLink
-                        document={<UserListPDF clients={clients} />}
-                        fileName="lista-de-clientes.pdf"
-                        className="pdf-button"
-                    >
-                        {
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                endIcon={!isMobileScreen && <PictureAsPdfIcon />}
-                                onClick={handleGeneratePDF}
-                            
-                            >
-                                {isMobileScreen ? <PictureAsPdfIcon /> : "Gerar PDF"}
-                            </Button>
-                        }
-                        </PDFDownloadLink>
-                </div>
-            </header>
-
+            <Header 
+                clients={clients}
+                isMobileScreen={isMobileScreen}
+                handleRedirect={handleRedirect}
+                handleGeneratePDF={handleGeneratePDF} 
+            />
             <div className="clients">
                 {
-                    isLoading ? 
-                    <IconButton loading={isLoading}/> 
-                    : 
-                    (
-                        <div className="group-cards">
-                            {
-                                clients.map((client: any) => (
-                                    <div key={client.id} className="card">
-                                        <div className="profile">
-                                            <AccountCircleIcon />
-                                            <span>{client.name}</span>
-                                            <span>{client.phone}</span>
-                                            <span>{client.email}</span>
-                                        </div>
-                                        <div className="profile-config">
-                                            <EditIcon className="icon-edit" onClick={() => handleOpen(client.id)}/>
-                                        </div>
-                                    </div>
-                                ))
-                            }
-                        </div>
-                    )
+                    isLoadingClients ? 
+                    <IconButton loading={isLoadingClients}/> : 
+                    <GroupOfCards clients={clients} handleEditClient={handleEditClient} />
                 }
-                <IconButton   />
             </div>
-
             <Modal
                 open={open}
                 onClose={handleClose}
                 aria-labelledby="modal-modal-title"
                 aria-describedby="modal-modal-description"
             >
-                <InsertClientForm client={client} handleSubmit={handleSubmit} loading={loading}/>
+                <InsertClientForm client={client} handleSubmit={handleSubmit} loading={loadingFetch}/>
             </Modal>
         </div>
     )
