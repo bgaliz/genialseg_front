@@ -6,13 +6,15 @@ import { Button } from "@mui/material";
 import Modal from '@mui/material/Modal';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import IconButton from '@mui/material/IconButton';
-
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import { toast } from "react-toastify";
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import EditIcon from '@mui/icons-material/Edit';
 import InsertClientForm from "../../components/ClientForm";
 import { ClientType } from "./types";
 import { useNavigate } from "react-router-dom";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import UserListPDF from "../../components/RenderPDF";
 
 const CLIENT_FORM_INIT = {
     name: "",
@@ -37,7 +39,8 @@ const Home = () => {
     
 
     const isMobileScreen = useMemo(() => {
-        return window.screen.availWidth < 500;
+        console.log(window.innerWidth)
+        return window.innerWidth < 500;
     }, []);
 
     const { data: clients, isLoading, refetch } = useQuery({
@@ -83,15 +86,43 @@ const Home = () => {
             console.error("Erro ao cadastrar cliente:", error);
             setLoading(false);
         }
-    }, [client]);
+    }, [client, refetch]);
+
+    const handleGeneratePDF = () => {
+        setLoading(true)
+        if(!clients.length) {
+            toast.warning("Não há nenhum cliente cadastrado para gerar PDF!")
+            return;
+        }
+        setLoading(false)
+    }
 
     return (
         <div className="wrapper-home">
             <header className="header-home">
                 <h2>Lista de Clientes</h2>
-                <Button variant="contained" color="primary" onClick={handleRedirect}>
-                    {isMobileScreen ? <PersonAddIcon /> : "Cadastrar"}
-                </Button>
+                <div className="header-actions">
+                    <Button variant="contained" color="primary" onClick={handleRedirect}>
+                        {isMobileScreen ? <PersonAddIcon /> : "Cadastrar"}
+                    </Button>
+                    <PDFDownloadLink
+                        document={<UserListPDF clients={clients} />}
+                        fileName="lista-de-clientes.pdf"
+                        className="pdf-button"
+                    >
+                        {
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                endIcon={!isMobileScreen && <PictureAsPdfIcon />}
+                                onClick={handleGeneratePDF}
+                            
+                            >
+                                {isMobileScreen ? <PictureAsPdfIcon /> : "Gerar PDF"}
+                            </Button>
+                        }
+                        </PDFDownloadLink>
+                </div>
             </header>
 
             <div className="clients">

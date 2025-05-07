@@ -39,7 +39,7 @@ const UserRegister = () => {
             console.error("Erro ao cadastrar cliente:", error);
             setLoading(false);
         }
-    }, []);
+    }, [navigate]);
     
     return (
         <form onSubmit={handleSubmit} className="form-register">
