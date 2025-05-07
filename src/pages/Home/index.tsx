@@ -14,6 +14,7 @@ import Header from "../../components/Header";
 
 import { ClientType } from "./types";
 import { CLIENT_FORM_INIT } from "./constants";
+import { validateEmail } from "../../utils/utils";
 
 const Home = () => {
     const [loadingFetch, setLoadingFetch] = useState(false);
@@ -46,6 +47,11 @@ const Home = () => {
         setLoadingFetch(true);
         const formData = new FormData(event.currentTarget);
         const rawData = Object.fromEntries(formData.entries());
+        if (!validateEmail(rawData.email as string)) {
+            toast.error("E-mail inválido! Por favor, insira um e-mail válido.");
+            setLoadingFetch(false);
+            return;
+        }
         const data: ClientType = {
             name: rawData.name as string,
             email: rawData.email as string,

@@ -8,8 +8,7 @@ import SendIcon from '@mui/icons-material/Send'
 import CloseIcon from '@mui/icons-material/Close';
 
 import { ClientType } from "../Home/types";
-import clientServices from '../../services/clientServices';
-
+import clientServices from '../../services/clientServices'
 
 
 const UserRegister = () => {
