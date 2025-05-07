@@ -1,6 +1,8 @@
 :root {
   --font-size: calc(10px + 1.5vmin);
   --background-color: #F6F0F0;
+  --background-card: #fff7f7;
+  --shadow: #3e320c;
   --primary-color: #BDB395;
   --text: #4c3f15;
 }
@@ -13,4 +15,8 @@
   background-color: var(--background-color);
   font-size: var(--font-size);
   color: var(--text);
+}
+
+p {
+  font-size: calc(8px + 1.5vmin);
 }

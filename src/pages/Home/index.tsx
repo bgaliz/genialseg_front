@@ -1,54 +1,125 @@
 import "./home.css"
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import api from "../../services/api";
 import { useQuery } from '@tanstack/react-query';
-import { Box, Button, Typography } from "@mui/material";
+import { Button } from "@mui/material";
 import Modal from '@mui/material/Modal';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import IconButton from '@mui/material/IconButton';
 
-const style = {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    width: '90%',
-    maxWidth: 600,
-    bgcolor: 'background.paper',
-    border: '1px solid #000',
-    boxShadow: 24,
-    borderRadius: 1,
-    p: 4,
-  };
+import { toast } from "react-toastify";
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
+import EditIcon from '@mui/icons-material/Edit';
+import InsertClientForm from "../../components/ClientForm";
+import { ClientType } from "./types";
+import { useNavigate } from "react-router-dom";
 
+const CLIENT_FORM_INIT = {
+    name: "",
+    email: "",
+    phone: "",
+    address: {
+        street: "",
+        zipcode: "",
+        number: "",
+        neighborhood: "",
+    },
+}
 
 const Home = () => {
-    const [clients, setClients] = useState([]);
+    const [loading, setLoading] = useState(false);
     const [open, setOpen] = useState(false);
-    const handleOpen = () => setOpen(true);
-    const handleClose = () => setOpen(false);
+    const [client, setClient] = useState<ClientType>(CLIENT_FORM_INIT);
 
-    const fetchClients = useCallback(async () => {
-        const response = await api.get('/listar-clientes');
-        setClients(response.data);
-        return response.data;
+    const navigate = useNavigate()
+    const handleClose = () => setOpen(false);
+    const handleRedirect = () => navigate("/register")
+    
+
+    const isMobileScreen = useMemo(() => {
+        return window.screen.availWidth < 500;
     }, []);
 
-    const { data, isLoading } = useQuery({ 
-        queryKey: ["listar-clientes"], 
-        queryFn: fetchClients,  
-        enabled: clients.length > 0,
-    })
+    const { data: clients, isLoading, refetch } = useQuery({
+        queryKey: ['listar-clientes'],
+        queryFn: async () => {
+          const response = await api.get('/listar-clientes');
+          return response.data;
+        }
+    });
+
+    const handleOpen = (id: string) => {
+        const clientById = clients.find((client: ClientType) => client.id === id)
+        console.log("clientById",clientById)
+        setClient(clientById)
+        setOpen(true)
+    };
+
+    const handleSubmit = useCallback(async (event: React.FormEvent<HTMLFormElement>) => {
+        event.preventDefault();
+        setLoading(true);
+        const formData = new FormData(event.currentTarget);
+        const rawData = Object.fromEntries(formData.entries());
+        const data: ClientType = {
+            name: rawData.name as string,
+            email: rawData.email as string,
+            phone: rawData.phone as string,
+            address: {
+                street: rawData.street as string,
+                zipcode: rawData.zipcode as string,
+                number: rawData.number as string,
+                neighborhood: rawData.neighborhood as string,
+            },
+        };
+        try {
+            const response = await api.put("/editar-cliente", data, {
+                params: { id: client.id }
+            });
+            setLoading(false);
+            setOpen(false);
+            toast.success(response.data.message)
+            refetch();
+        } catch (error) {
+            console.error("Erro ao cadastrar cliente:", error);
+            setLoading(false);
+        }
+    }, [client]);
 
     return (
         <div className="wrapper-home">
             <header className="header-home">
                 <h2>Lista de Clientes</h2>
-                <Button variant="contained" color="primary" onClick={handleOpen}>
-                    Cadastrar
+                <Button variant="contained" color="primary" onClick={handleRedirect}>
+                    {isMobileScreen ? <PersonAddIcon /> : "Cadastrar"}
                 </Button>
             </header>
 
-            <div>
-                {data}
+            <div className="clients">
+                {
+                    isLoading ? 
+                    <IconButton loading={isLoading}/> 
+                    : 
+                    (
+                        <div className="group-cards">
+                            {
+                                clients.map((client: any) => (
+                                    <div key={client.id} className="card">
+                                        <div className="profile">
+                                            <AccountCircleIcon />
+                                            <span>{client.name}</span>
+                                            <span>{client.phone}</span>
+                                            <span>{client.email}</span>
+                                        </div>
+                                        <div className="profile-config">
+                                            <EditIcon className="icon-edit" onClick={() => handleOpen(client.id)}/>
+                                        </div>
+                                    </div>
+                                ))
+                            }
+                        </div>
+                    )
+                }
+                <IconButton   />
             </div>
 
             <Modal
@@ -57,14 +128,7 @@ const Home = () => {
                 aria-labelledby="modal-modal-title"
                 aria-describedby="modal-modal-description"
             >
-                <Box sx={style}>
-                <Typography id="modal-modal-title" variant="h6" component="h2">
-                    Text in a modal
-                </Typography>
-                <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-                    Duis mollis, est non commodo luctus, nisi erat porttitor ligula.
-                </Typography>
-                </Box>
+                <InsertClientForm client={client} handleSubmit={handleSubmit} loading={loading}/>
             </Modal>
         </div>
     )

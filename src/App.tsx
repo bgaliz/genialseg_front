@@ -1,14 +1,25 @@
-import AppRoutes from './routes/routes';
 import './App.css';
-import { useEffect } from 'react';
+import AppRoutes from './routes/routes';
 import Login from './pages/Login';
+import React, { useEffect, useState } from 'react';
+import { ToastContainer } from 'react-toastify';
 
 function App() {
-  const token = localStorage.getItem('token');
+  const [token, setToken] = useState("");
+  
+  useEffect(() => {
+    const localToken = localStorage.getItem("token")
+    if(!localToken && !window.location.href.includes("/login")){
+      window.location.href = "/login"
+    } else {
+      setToken(localToken!)
+    }
+  }, [])
 
   return <div className="App">
+    <ToastContainer />
     {
-      token ? (<AppRoutes />) : (<Login />)
+      token ? <AppRoutes /> : <Login />
     }
   </div>;
 }
