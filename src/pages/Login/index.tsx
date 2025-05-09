@@ -21,7 +21,7 @@ const Login = () => {
                 toast.success(loginData.data.message)
             }
         } catch(error) {
-            console.error("rapaz", (error as any)?.response?.data?.error)
+            console.error((error as any)?.response?.data?.error)
         }
     }
 
